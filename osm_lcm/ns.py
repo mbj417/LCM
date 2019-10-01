@@ -656,6 +656,10 @@ class NsLcm(LcmBase):
             nsr_update['instantiate_params'].update(pla_suggestions['suggestions'][0])
             nsr.update(nsr_update)
             self.update_db_2("nsrs", nsr["_id"], nsr_update)
+            operationParams.update(pla_suggestions['suggestions'][0])
+            nslcmop_update = { 'operationParams' : operationParams }
+            nslcmop.update(nslcmop_update)
+            self.update_db_2("nslcmops", nslcmop['_id'], nslcmop_update)
             for vnfr in vnfrs:
                 for vnf in nsr['instantiate_params']['vnf']:
                     if vnfr['member-vnf-index-ref'] != vnf['member-vnf-index']:
@@ -723,6 +727,7 @@ class NsLcm(LcmBase):
                 db_vnfds_index[vnfr["member-vnf-index-ref"]] = db_vnfds[vnfd_id]
 
             await self.do_placement(db_nslcmop, db_nsr, db_vnfrs_list)
+            ns_params = db_nslcmop.get("operationParams")
             self.logger.debug("Placement done:")
             self.logger.debug("db_nslcmop = {}".format(json.dumps(db_nslcmop)))
             self.logger.debug("nsr = {}".format(json.dumps(db_nsr)))
