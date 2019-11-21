@@ -236,20 +236,21 @@ class Lcm:
                 wait_time = 2 if not first_start else 5
                 await asyncio.sleep(wait_time, loop=self.loop)
 
-    def kafka_subscribe(self, topic, command, callback):
-        self.kafka_unsubscribe(topic, command)
-        self._kafka_subscribers.append({'topic' : topic, 'command' : command, 'callback' : callback })
+    def kafka_subscribe(self, topic, command, key, value, callback):
+        self.kafka_unsubscribe(topic, command, key, value)
+        self._kafka_subscribers.append({'topic' : topic, 'command' : command, 'key' : key, 'value' : value, 'callback' : callback })
         self.logger.debug("Number of kafka_subscribers: {}".format(len(self._kafka_subscribers)))
 
     def _kafka_notify(self, topic, command, data):
         for s in self._kafka_subscribers:
-            if s["topic"] == topic and s["command"] == command:
+            value = data.get(s["key"])
+            if s["topic"] == topic and s["command"] == command and s["value"] == value:
                 s["callback"](topic, command, data)
         
-    def kafka_unsubscribe(self, topic, command):
+    def kafka_unsubscribe(self, topic, command, key, value):
         pos = 0
         for s in self._kafka_subscribers:
-            if s["topic"] == topic and s["command"] == command:
+            if s["topic"] == topic and s["command"] == command and s["key"] == key and s["value"] == value:
                 del self._kafka_subscribers[pos]
                 return
             else:

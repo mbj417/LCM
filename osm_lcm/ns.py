@@ -635,28 +635,28 @@ class NsLcm(LcmBase):
         placementEngine = additionalNsParams.get('placementEngine', None)
         if placementEngine == "LCM_PLA":
             self.logger.debug("Use LCM_PLA...");
-            pla_suggestions = { 'received' : False, 'suggestions' : [] }
+            pla_placement = { 'received' : False, 'result' : [] }
             def pla_callback(topic, command, data):
-                pla_suggestions['suggestions'] = data['suggestions']
-                pla_suggestions['received'] = True
+                pla_placement['result'] = data
+                pla_placement['received'] = True
 
-            self.lcm.kafka_subscribe("pla", "suggestions", pla_callback)
-            await self.msg.aiowrite("pla", "get_suggestions", { 'nsParams': nsr['instantiate_params'] }, loop=self.loop)
+            self.lcm.kafka_subscribe("pla", "placement", "nslcmopId", nslcmop['id'], pla_callback)
+            await self.msg.aiowrite("pla", "get_placement", { 'nslcmopId': nslcmop['id'] }, loop=self.loop)
             wait = 15
-            while not pla_suggestions['received']:
+            while not pla_placement['received']:
                 await asyncio.sleep(1)
                 wait -= 1
                 if wait <= 0:
                     self.logger.debug("Placement timeout!")
+                    self.lcm.kafka_unsubscribe("pla", "placement", "nslcmopId", nslcmop['id'])
                     return
-            self.lcm.kafka_unsubscribe("pla", "suggestions")
-            self.logger.debug("Placement suggestions received: {}".format(json.dumps(pla_suggestions['suggestions'])))
-            # use first suggestion
+            self.lcm.kafka_unsubscribe("pla", "placement", "nslcmopId", nslcmop['id'])
+            self.logger.debug("Placement received: {}".format(json.dumps(pla_placement['result'])))
             nsr_update = {'instantiate_params' : nsr['instantiate_params'] }
-            nsr_update['instantiate_params'].update(pla_suggestions['suggestions'][0])
+            nsr_update['instantiate_params'].update(pla_placement['result'])
             nsr.update(nsr_update)
             self.update_db_2("nsrs", nsr["_id"], nsr_update)
-            operationParams.update(pla_suggestions['suggestions'][0])
+            operationParams.update(pla_placement['result'])
             nslcmop_update = { 'operationParams' : operationParams }
             nslcmop.update(nslcmop_update)
             self.update_db_2("nslcmops", nslcmop['_id'], nslcmop_update)
