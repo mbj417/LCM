@@ -13,7 +13,7 @@
 ##
 
 pyyaml==3.*
-aiohttp==0.20.2
+aiohttp==3.7.4
 jinja2
 git+https://osm.etsi.org/gerrit/osm/common.git#egg=osm-common
 git+https://osm.etsi.org/gerrit/osm/N2VC.git#egg=n2vc
